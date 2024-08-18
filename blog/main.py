@@ -1,5 +1,7 @@
 from fastapi import FastAPI,Depends, status, Response
-from . import schemas, models 
+from . import schemas, models
+from .models import User
+from .schemas import UserCreate
 from .database import engine, SessionLocal 
 from sqlalchemy.orm import Session
 
@@ -35,3 +37,19 @@ def show(id,response: Response,db:Session=Depends(get_db)):
         response.status_code = status.HTTP_404_NOT_FOUND
         return {'detail':f"blog com esse id {id} não existe" }
     return blog
+
+@app.post('/users/')
+def create_user(user: UserCreate, db: Session= Depends(get_db)):
+    db_user = User(username=user.username,
+                name= user.name,
+                email=user.email)
+    db_user.set_password(user.password)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.get('/users/')
+def get_users(db: Session= Depends(get_db)):
+    users = db.query(models.User).all()
+    return users
